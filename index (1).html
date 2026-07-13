@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMC · Control de Horas</title>
+
+<!-- PWA Meta -->
+<meta name="theme-color" content="#0f1e3d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IMC Horas">
+<link rel="apple-touch-icon" href="logo-imc.png">
+<link rel="icon" href="logo-imc.png">
+<link rel="manifest" href="manifest.json">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --navy:      #0f1e3d;
+  --navy-mid:  #1a2e5a;
+  --navy-lite: #243f7a;
+  --gold:      #d4a017;
+  --gold-lite: #f0c842;
+  --blue:      #2563eb;
+  --blue-lite: #3b82f6;
+  --bg:        #eef2f7;
+  --surface:   #ffffff;
+  --surface2:  #f4f7fb;
+  --border:    #dde3ed;
+  --text:      #0f1e3d;
+  --muted:     #6b7a99;
+  --green:     #16a34a;
+  --green-bg:  #dcfce7;
+  --red:       #dc2626;
+  --red-bg:    #fee2e2;
+  --amber:     #d97706;
+  --amber-bg:  #fef3c7;
+  --sky:       #0284c7;
+  --sky-bg:    #e0f2fe;
+  --shadow-sm: 0 1px 3px rgba(15,30,61,.07), 0 1px 2px rgba(15,30,61,.04);
+  --shadow:    0 4px 16px rgba(15,30,61,.09), 0 1px 4px rgba(15,30,61,.05);
+  --shadow-lg: 0 12px 40px rgba(15,30,61,.14), 0 4px 12px rgba(15,30,61,.07);
+  --radius:    14px;
+  --radius-sm: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ══ LOGIN ══ */
+#login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #0a1628 0%, #0f1e3d 50%, #1a2e5a 100%);
+}
+#login-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(212,160,23,.12) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(37,99,235,.10) 0%, transparent 50%);
+  pointer-events: none;
+}
+.login-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+.login-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 48px 44px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,.1);
+  text-align: center;
+}
+.login-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--navy);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 99px;
+  margin-bottom: 20px;
+}
+.login-logo {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--navy-mid), var(--navy));
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(15,30,61,.3), 0 0 0 4px rgba(212,160,23,.2);
+  overflow: hidden;
+}
+.login-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.login-title { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 4px; letter-spacing: -.3px; }
+.login-sub { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
+.login-field { position: relative; margin-bottom: 14px; text-align: left; }
+.login-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; display: block; }
+.login-input {
+  width: 100%; padding: 13px 16px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 15px; font-family: inherit; color: var(--text);
+  background: var(--surface2); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.login-input:focus { border-color: var(--navy-mid); box-shadow: 0 0 0 3px rgba(26,46,90,.1); background: #fff; }
+.login-input::placeholder { font-size: 15px; letter-spacing: 3px; font-weight: 700; color: #c4cdd9; }
+.login-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--navy-mid), var(--navy));
+  color: #fff; border: none; border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: all .2s; margin-top: 6px;
+  letter-spacing: .2px; position: relative; overflow: hidden;
+}
+.login-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.1), transparent); }
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(15,30,61,.35); }
+.login-btn:active { transform: translateY(0); }
+.login-error { color: var(--red); font-size: 12px; margin-top: 10px; display: none; background: var(--red-bg); padding: 8px 12px; border-radius: 6px; }
+.login-toggle { margin-top: 20px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.login-toggle span { color: var(--navy-mid); font-weight: 600; text-decoration: underline; }
+
+/* ══ HEADER ══ */
+#app { display: none; min-height: 100vh; }
+
+header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+  color: #fff; height: 64px; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 12px rgba(15,30,61,.25);
+}
+.h-left { display: flex; align-items: center; gap: 14px; }
+.h-logo {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  border: 1.5px solid rgba(212,160,23,.5);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+}
+.h-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.h-title { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+.h-sub { font-size: 11px; opacity: .6; margin-top: 1px; }
+.h-right { display: flex; align-items: center; gap: 10px; }
+.h-pill {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  padding: 6px 12px; border-radius: 99px;
+  font-size: 12px; font-weight: 500;
+}
+.h-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+.sync-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; opacity: .7; padding: 0 10px; }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #94a3b8; }
+.sync-dot.ok  { background: #4ade80; }
+.sync-dot.err { background: #f87171; }
+.sync-dot.pulse { animation: pulse-dot 1.5s ease-in-out infinite; background: #fbbf24; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+.btn-logout {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.85); padding: 7px 14px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500; font-family: inherit;
+  cursor: pointer; transition: all .2s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.2); }
+
+/* ══ TABS ══ */
+.tabs-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 28px; display: flex; gap: 2px; overflow-x: auto;
+}
+.tabs-bar::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 0 18px; height: 48px;
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 500; color: var(--muted);
+  cursor: pointer; border-bottom: 2.5px solid transparent;
+  transition: all .18s; white-space: nowrap; flex-shrink: 0;
+}
+.tab svg { width: 16px; height: 16px; flex-shrink: 0; }
+.tab:hover { color: var(--navy-mid); }
+.tab.active { color: var(--navy-mid); border-bottom-color: var(--navy-mid); font-weight: 600; }
+
+/* ══ MAIN ══ */
+main { padding: 28px; max-width: 1280px; margin: 0 auto; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ══ KIOSKO ══ */
+.kiosko-layout {
+  display: grid; grid-template-columns: 1fr 380px;
+  gap: 24px; align-items: start;
+  max-width: 900px; margin: 0 auto;
+}
+.clock-card {
+  background: linear-gradient(145deg, var(--navy), #0a1628);
+  border-radius: var(--radius); padding: 36px 32px;
+  color: #fff; text-align: center;
+  box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
+}
+.clock-card::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,160,23,.15) 0%, transparent 70%);
+}
+.clock-card::after {
+  content: ''; position: absolute; bottom: -30px; left: -30px;
+  width: 140px; height: 140px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(37,99,235,.12) 0%, transparent 70%);
+}
+.clock-logo {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: rgba(255,255,255,.07);
+  border: 1.5px solid rgba(212,160,23,.4);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px; position: relative; z-index: 1;
+  overflow: hidden;
+}
+.clock-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.clock-time {
+  font-size: 56px; font-weight: 800; letter-spacing: -2px; color: #fff;
+  font-variant-numeric: tabular-nums; line-height: 1; position: relative; z-index: 1;
+}
+.clock-time .colon { color: var(--gold); }
+.clock-date { font-size: 13px; color: rgba(255,255,255,.55); margin-top: 10px; margin-bottom: 28px; position: relative; z-index: 1; text-transform: capitalize; }
+.todays-count { display: flex; gap: 12px; position: relative; z-index: 1; }
+.today-pill { flex: 1; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 12px 10px; text-align: center; }
+.today-pill-val { font-size: 22px; font-weight: 800; color: #fff; }
+.today-pill-lbl { font-size: 10px; color: rgba(255,255,255,.45); margin-top: 3px; text-transform: uppercase; letter-spacing: .6px; }
+
+.register-card { background: var(--surface); border-radius: var(--radius); padding: 32px 28px; box-shadow: var(--shadow); }
+.reg-title { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.reg-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.cedula-field { position: relative; margin-bottom: 16px; }
+.cedula-input {
+  width: 100%; padding: 16px 20px;
+  border: 2px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 22px; font-weight: 800; text-align: center;
+  letter-spacing: 4px; color: var(--navy); font-family: inherit;
+  outline: none; transition: border-color .2s, box-shadow .2s; background: var(--surface2);
+}
+.cedula-input:focus { border-color: var(--navy-mid); box-shadow: 0 0 0 4px rgba(26,46,90,.08); background: #fff; }
+.cedula-input::placeholder { font-size: 13px; letter-spacing: 0; font-weight: 400; color: #c4cdd9; }
+.numpad { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
+.num-btn {
+  padding: 16px 8px; background: var(--surface2);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: 18px; font-weight: 700; color: var(--navy);
+  font-family: inherit; cursor: pointer; transition: all .12s; user-select: none;
+}
+.num-btn:hover { background: var(--sky-bg); border-color: var(--blue); color: var(--blue); }
+.num-btn:active { transform: scale(.94); }
+.num-btn.del { background: var(--red-bg); border-color: #fca5a5; color: var(--red); }
+.num-btn.del:hover { background: #fecaca; }
+.num-btn.enter { background: linear-gradient(135deg, var(--navy-mid), var(--navy)); border-color: transparent; color: #fff; font-size: 20px; }
+.num-btn.enter:hover { box-shadow: 0 4px 16px rgba(15,30,61,.35); }
+
+.feedback-card { margin-top: 16px; border-radius: var(--radius-sm); padding: 16px 18px; display: none; gap: 14px; align-items: flex-start; border: 1.5px solid; }
+.feedback-card.show { display: flex; }
+.feedback-card.success { background: #f0fdf4; border-color: #86efac; }
+.feedback-card.warning { background: #fffbeb; border-color: #fcd34d; }
+.feedback-card.info    { background: var(--sky-bg); border-color: #7dd3fc; }
+.feedback-card.error   { background: var(--red-bg); border-color: #fca5a5; }
+.fb-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.fb-name { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+.fb-role { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.fb-time { font-size: 12px; color: var(--muted); }
+.fb-msg  { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.feedback-card.success .fb-msg { color: #166534; }
+.feedback-card.warning .fb-msg { color: #92400e; }
+.feedback-card.info .fb-msg    { color: #0c4a6e; }
+.feedback-card.error .fb-msg   { color: var(--red); }
+
+.pipeline { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-top: 14px; }
+.ps { border-radius: 8px; padding: 8px 6px; text-align: center; font-size: 10px; font-weight: 600; background: var(--surface2); border: 1.5px solid var(--border); color: var(--muted); transition: all .3s; }
+.ps.done   { background: var(--green-bg); border-color: #86efac; color: var(--green); }
+.ps.active { background: var(--sky-bg); border-color: #7dd3fc; color: var(--sky); }
+.ps-icon { font-size: 15px; display: block; margin-bottom: 3px; }
+.ps-lbl { font-size: 9px; line-height: 1.2; }
+
+/* ══ DASHBOARD ══ */
+.dash-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+.dash-title { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -.4px; }
+.dash-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.dash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+@media(max-width:900px){ .kpis { grid-template-columns: repeat(2,1fr); } }
+.kpi { background: var(--surface); border-radius: var(--radius); padding: 22px 22px 18px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: relative; overflow: hidden; transition: box-shadow .2s; }
+.kpi:hover { box-shadow: var(--shadow); }
+.kpi-icon { font-size: 24px; margin-bottom: 12px; }
+.kpi-val { font-size: 28px; font-weight: 800; color: var(--navy); line-height: 1.1; }
+.kpi-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+.kpi-trend { font-size: 11px; color: var(--muted); margin-top: 12px; display: flex; align-items: center; gap: 4px; }
+.kpi-bar { height: 4px; background: var(--surface2); border-radius: 99px; margin-top: 14px; overflow: hidden; }
+.kpi-bar-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.k-blue .kpi-bar-fill { background: var(--blue); }
+.k-green .kpi-bar-fill { background: var(--green); }
+.k-amber .kpi-bar-fill { background: var(--amber); }
+.k-sky .kpi-bar-fill { background: var(--sky); }
+
+/* ══ CARDS & TABLES ══ */
+.card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+.card-head { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.card-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+.card-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.card-actions { display: flex; gap: 8px; }
+
+.tbl-wrap { overflow-x: auto; width: 100%; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 800px; }
+th { background: var(--surface2); padding: 14px 20px; font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+td { padding: 14px 20px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(244,247,fb,.5); }
+
+.emp-cell { display: flex; align-items: center; gap: 12px; }
+.emp-avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--sky-bg); color: var(--sky); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.emp-name { font-weight: 600; color: var(--navy); }
+.emp-ced { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+.chip { display: inline-flex; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.chip-imc { background: var(--sky-bg); color: var(--sky); }
+.chip-status { border: 1px solid; }
+.status-ok { background: var(--green-bg); color: var(--green); border-color: #bbf7d0; }
+.status-warn { background: var(--amber-bg); color: var(--amber); border-color: #fde68a; }
+.status-err { background: var(--red-bg); color: var(--red); border-color: #fecaca; }
+
+.extras-pos { color: var(--green); font-weight: 700; }
+.extras-neg { color: var(--muted); opacity: .5; }
+
+.text-muted { color: var(--muted); }
+.text-sm { font-size: 12px; }
+
+.empty-state { padding: 60px 20px; text-align: center; display: none; }
+.empty-state-icon { font-size: 40px; margin-bottom: 12px; opacity: .5; }
+.empty-state-text { font-size: 15px; font-weight: 600; color: var(--navy); }
+.empty-state-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.pagination { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; background: var(--surface2); }
+.pag-info { font-size: 12px; color: var(--muted); font-weight: 500; }
+.pg-btn { padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 6px; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.pg-btn:hover { border-color: var(--navy-mid); color: var(--navy-mid); }
+.pg-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+/* ══ BUTTONS ══ */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all .2s; border: 1.5px solid transparent; }
+.btn svg { width: 16px; height: 16px; }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { background: #15803d; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,163,74,.2); }
+.btn-sky { background: var(--sky); color: #fff; }
+.btn-sky:hover { background: #0369a1; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(2,132,199,.2); }
+.btn-danger { background: var(--red-bg); color: var(--red); border-color: #fecaca; }
+.btn-danger:hover { background: #fee2e2; border-color: var(--red); }
+.btn-ghost { background: transparent; color: var(--muted); border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface2); color: var(--navy); border-color: var(--navy-mid); }
+
+/* ══ FILTERS ══ */
+.filters { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #fafbfc; }
+.filters input, .filters select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; transition: all .2s; }
+.filters input:focus, .filters select:focus { border-color: var(--navy-mid); box-shadow: 0 0 0 3px rgba(26,46,90,.05); }
+
+/* ══ TOAST ══ */
+#toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+.toast-item { background: #fff; padding: 14px 20px; border-radius: 12px; box-shadow: var(--shadow-lg); border-left: 4px solid; display: flex; align-items: center; gap: 12px; min-width: 280px; animation: toast-in .3s ease-out; font-size: 13px; font-weight: 600; color: var(--navy); }
+@keyframes toast-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.toast-item.ok { border-color: var(--green); }
+.toast-item.err { border-color: var(--red); }
+.toast-item.warn { border-color: var(--amber); }
+.toast-item.sync { border-color: var(--blue); }
+.toast-out { transform: translateX(120%); opacity: 0; transition: all .4s ease-in; }
+.toast-icon { font-size: 18px; }
+
+@media (max-width: 768px) {
+  .kiosko-layout { grid-template-columns: 1fr; }
+  header { padding: 0 16px; }
+  main { padding: 16px; }
+  .tabs-bar { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-grid"></div>
+  <div class="login-card">
+    <div class="login-badge">Sistema de Control</div>
+    <h1 class="login-title">Acceso al Sistema</h1>
+    <p class="login-sub">Modo kiosko · entra directo al registro</p>
+    
+    <div class="login-field">
+      <label class="login-label" id="login-label">Código PIN</label>
+      <input type="password" class="login-input" id="pin-input" placeholder="Entrar directo" 
+             maxlength="6" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    
+    <button class="login-btn" onclick="doLogin()">Entrar al Sistema</button>
+    <div class="login-error" id="login-err">PIN incorrecto. Inténtalo de nuevo.</div>
+    
+    <div class="login-toggle" onclick="toggleLoginMode()">
+      ¿Eres <span id="toggle-txt">Administrador</span>?
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="h-left">
+      <div>
+        <div class="h-title">IMC · Control de Horas</div>
+        <div class="h-sub" id="hdr-user">Kiosko de Registro</div>
+      </div>
+    </div>
+    <div class="h-right">
+      <div class="sync-indicator">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-lbl">Sin sync</span>
+      </div>
+      <div class="h-pill">
+        <div class="h-pill-dot"></div>
+        <span id="clock-txt">00:00:00</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Salir</button>
+    </div>
+  </header>
+
+  <div class="tabs-bar" id="tabs-nav"></div>
+
+  <main>
+    <!-- ── KIOSKO ── -->
+    <div class="section active" id="sec-kiosko">
+      <div class="kiosko-layout">
+        <div class="clock-card">
+          <div class="clock-time" id="ck-time">00:00:00</div>
+          <div class="clock-date" id="ck-date">—</div>
+          <div class="todays-count">
+            <div class="today-pill">
+              <div class="today-pill-val" id="ck-total">0</div>
+              <div class="today-pill-lbl">Marcaciones</div>
+            </div>
+            <div class="today-pill">
+              <div class="today-pill-val" id="ck-planta">0</div>
+              <div class="today-pill-lbl">En planta</div>
+            </div>
+            <div class="today-pill">
+              <div class="today-pill-val" id="ck-salieron">0</div>
+              <div class="today-pill-lbl">Salieron</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="register-card">
+          <div class="reg-title">Registro de Asistencia</div>
+          <div class="reg-sub">Ingresa tu número de cédula</div>
+          <div class="cedula-field">
+            <input class="cedula-input" id="ced-inp" type="text" inputmode="numeric"
+                   maxlength="12" placeholder="Ej: 1007086468"
+                   onkeydown="if(event.key==='Enter') doRegister()">
+          </div>
+          <div class="numpad">
+            <button class="num-btn" onclick="pad('1')">1</button>
+            <button class="num-btn" onclick="pad('2')">2</button>
+            <button class="num-btn" onclick="pad('3')">3</button>
+            <button class="num-btn" onclick="pad('4')">4</button>
+            <button class="num-btn" onclick="pad('5')">5</button>
+            <button class="num-btn" onclick="pad('6')">6</button>
+            <button class="num-btn" onclick="pad('7')">7</button>
+            <button class="num-btn" onclick="pad('8')">8</button>
+            <button class="num-btn" onclick="pad('9')">9</button>
+            <button class="num-btn del" onclick="pad('del')">⌫</button>
+            <button class="num-btn" onclick="pad('0')">0</button>
+            <button class="num-btn enter" onclick="doRegister()">✓</button>
+          </div>
+          <div class="feedback-card" id="fb-card">
+            <div class="fb-icon" id="fb-ico">✅</div>
+            <div>
+              <div class="fb-name" id="fb-name">—</div>
+              <div class="fb-role" id="fb-role">—</div>
+              <div class="fb-time" id="fb-time">—</div>
+              <div class="fb-msg"  id="fb-msg">—</div>
+            </div>
+          </div>
+          <div class="pipeline" id="pipeline" style="display:none">
+            <div class="ps" id="ps-1"><span class="ps-icon">🟢</span><span class="ps-lbl">Entrada</span></div>
+            <div class="ps" id="ps-2"><span class="ps-icon">🍽️</span><span class="ps-lbl">Sale Alm.</span></div>
+            <div class="ps" id="ps-3"><span class="ps-icon">🔙</span><span class="ps-lbl">Regreso</span></div>
+            <div class="ps" id="ps-4"><span class="ps-icon">🏁</span><span class="ps-lbl">Salida</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div class="section" id="sec-dashboard">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title">Dashboard</div>
+          <div class="dash-sub" id="dash-sub">Cargando...</div>
+        </div>
+        <div class="dash-actions">
+          <button class="btn btn-success" onclick="exportDash()">Excel</button>
+          <button class="btn btn-ghost" onclick="loadDash()">Actualizar</button>
+        </div>
+      </div>
+      <div class="kpis">
+        <div class="kpi k-blue">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-val" id="kp-total">0</div>
+          <div class="kpi-label">Marcaciones hoy</div>
+          <div class="kpi-trend" id="kp-total-t">—</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kp-total-b" style="width:0%"></div></div>
+        </div>
+        <div class="kpi k-green">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-val" id="kp-comp">0</div>
+          <div class="kpi-label">Jornada completa</div>
+          <div class="kpi-trend" id="kp-comp-t">—</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kp-comp-b" style="width:0%"></div></div>
+        </div>
+        <div class="kpi k-amber">
+          <div class="kpi-icon">🏭</div>
+          <div class="kpi-val" id="kp-planta">0</div>
+          <div class="kpi-label">En planta ahora</div>
+          <div class="kpi-trend" id="kp-planta-t">—</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kp-planta-b" style="width:0%"></div></div>
+        </div>
+        <div class="kpi k-sky">
+          <div class="kpi-icon">⏱️</div>
+          <div class="kpi-val" id="kp-extras">0h</div>
+          <div class="kpi-label">Horas extras hoy</div>
+          <div class="kpi-trend" id="kp-extras-trend">Sobre la jornada de 8h</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kp-extras-b" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Top horas extra</div>
+            <div class="card-subtitle" id="top-extra-sub">Empleados con mayor acumulado del día</div>
+          </div>
+        </div>
+        <div class="tbl-wrap" style="padding:16px 24px 20px;">
+          <div id="top-extra-chart" style="display:grid;gap:12px"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Detalle del día</div>
+            <div class="card-subtitle" id="dash-tbl-sub">—</div>
+          </div>
+          <div class="card-actions">
+            <select id="f-empresa" onchange="loadDash()" class="btn btn-ghost">
+              <option value="">Todas las empresas</option>
+              <option value="IMC CARGO">IMC CARGO</option>
+              <option value="LOGIMAT">LOGIMAT</option>
+              <option value="DEPOSITO">DEPOSITO</option>
+            </select>
+            <input type="date" id="f-fecha" onchange="loadDash()">
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Empleado</th><th>Cargo</th><th>Empresa</th>
+              <th>Entrada</th><th>Sale Alm.</th><th>Regreso</th><th>Salida</th>
+              <th>H. Trab.</th><th>H. Extras</th><th>Estado</th>
+            </tr></thead>
+            <tbody id="dash-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="dash-empty">
+          <div class="empty-state-icon">📭</div>
+          <div class="empty-state-text">Sin registros para esta fecha</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REGISTROS ── -->
+    <div class="section" id="sec-registros">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Historial de Registros</div>
+            <div class="card-subtitle" id="reg-sub">Cargando...</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-sky" id="btn-sync-cloud" onclick="syncFromSheet()">Sincronizar Nube</button>
+            <button class="btn btn-success" onclick="exportRegs()">Excel</button>
+            <button class="btn btn-danger" onclick="clearDB()">Limpiar todo</button>
+          </div>
+        </div>
+        <div class="filters">
+          <input type="text" id="r-buscar" placeholder="🔍 Cédula o nombre" oninput="loadRegs()">
+          <input type="date" id="r-ini" onchange="loadRegs()">
+          <input type="date" id="r-fin" onchange="loadRegs()">
+          <select id="r-emp" onchange="loadRegs()">
+            <option value="">Todas las empresas</option>
+            <option value="IMC CARGO">IMC CARGO</option>
+            <option value="LOGIMAT">LOGIMAT</option>
+            <option value="DEPOSITO">DEPOSITO</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Fecha</th><th>Empleado</th><th>Cargo</th><th>Empresa</th>
+              <th>Entrada</th><th>Sale Alm.</th><th>Regreso</th><th>Salida</th>
+              <th>H. Trab.</th><th>H. Extras</th><th>Estado</th>
+            </tr></thead>
+            <tbody id="reg-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="reg-empty">
+          <div class="empty-state-icon">📂</div>
+          <div class="empty-state-text">No hay registros que coincidan</div>
+        </div>
+        <div class="pagination" id="reg-pag">
+          <div class="pag-info" id="pag-info">—</div>
+          <div id="pag-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+//  CONFIGURACIÓN
+// ════════════════════════════════════════
+const PIN_ADMIN = '123456';
+const PIN_KIOSKO = '0000';
+let MODO = 'kiosko';
+let LOGIN_MODO = 'kiosko';
+let db = null;
+let dbReady = null;
+let clockTimer = null;
+let kioskoRefreshTimer = null;
+let pagActual = 1;
+const POR_PAG = 20;
+let totalRegs = 0;
+let pullEnProgreso = false;
+let latestCloudRows = [];
+const HORAS_DIARIAS_BASE = 8; // cambia este valor para ajustar el parámetro de horas normales
+
+function initDB() {
+  if (!dbReady) {
+    dbReady = openDB().then(conn => {
+      db = conn;
+      return conn;
+    });
+  }
+  return dbReady;
+}
+
+// URL DE LA HOJA DE GOOGLE (LECTURA)
+function getSheetURL() {
+  return 'https://docs.google.com/spreadsheets/d/1cdyL6lZN2KRcQwyvuvx13kwOm9hYQjcq1yW-t6Bh5UU/gviz/tq?tqx=out:json';
+}
+
+// URL DE GOOGLE APPS SCRIPT (ESCRITURA)
+function getWriteURL() {
+  return 'https://script.google.com/macros/s/AKfycbzdJUGa1-p-QGucfj2bxTwkYejvGeeYAPLkfruUz5SS9fD0hxsRUJN7UKqDJ-vcrN3wag/exec';
+}
+
+// ════════════════════════════════════════
+//  EMPLEADOS (FRAGMENTO)
+// ════════════════════════════════════════
+const EMPLEADOS = [
+{"DOCUMENTO":"1007086468","NOMBRE":"BARACALDO CANTOR HEIDER STEVEN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1121043857","NOMBRE":"BOLAÑO MENDEZ MISAEL TOMAS","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"6312092","NOMBRE":"CARRULLO ROMERO JUAN DIEGO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1013595300","NOMBRE":"CASTILLO ROJAS DIDIER ANDRES","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1077320807","NOMBRE":"CIFUENTES GONZALEZ ANDREA","CARGO":"AUXILIAR DE CONTROL","AREA":"CONTROL","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1562425","NOMBRE":"CORONEL DIAZ ORLAND RAFAEL","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1001043613","NOMBRE":"FAJARDO PEDRO ANTONIO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1016058848","NOMBRE":"GARCIA BERNAL JORGE ALBERTO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"79892771","NOMBRE":"GUTIERREZ HERRAN LUIS ALEJANDRO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"79840710","NOMBRE":"GUZMAN NIETO FERNANDO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"80802942","NOMBRE":"MAHECHA MAHECHA EDWIN DANILO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"80162252","NOMBRE":"MEDINA FRANCISCO ANDRES","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"80657279","NOMBRE":"AGUIRRE MORA WILLIAM FERNANDO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1023037588","NOMBRE":"MOLINA GOMEZ EDISON CAMILO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1000974617","NOMBRE":"MORALES GARCIA NICOLAS EDUARDO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"5652802","NOMBRE":"PARRA SANCHEZ YBCEN DARIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1001051771","NOMBRE":"PEÑA AMAYA MAICOL YESID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1015994948","NOMBRE":"RINCON CASTIBLANCO MANUEL ALEJANDRO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1002337837","NOMBRE":"ROMERO RIOS YEFERSON YECID","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"80161439","NOMBRE":"TOVAR VELASQUEZ NESTOR ARNULFO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1026257510","NOMBRE":"TREJOS ALVARADO HAROLD FELIPE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1006130245","NOMBRE":"VIATELA RODRIGUEZ ANDRES MAURICIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1030535266","NOMBRE":"VILLADA OSORIO CRISTIAN STIVET","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1193118884","NOMBRE":"VIZCAINO GALINDO JUAN SEBASTIAN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1128473517","NOMBRE":"ARROYO CHARRASQUIEL MANUEL ENRIQUE","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80830785","NOMBRE":"BALLEN SALINAS MICHAEL ANDRES","CARGO":"CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1023919602","NOMBRE":"BANQUEZ PEREZ JUAN SEGUNDO","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1072717356","NOMBRE":"BELTRAN VELASQUEZ JHONATAN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1073169884","NOMBRE":"BOLAÑOS BAUTISTA DEISY JOHANNA","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80159262","NOMBRE":"BUITRAGO PUENTES FERNANDO","CARGO":"CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"79699786","NOMBRE":"CANTOR DIAZ WILLIAM","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1069433838","NOMBRE":"CARRILLO ESCOBAR ROBINSON","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80172947","NOMBRE":"CASAS CRUZ NELSON ENRIQUE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1019098736","NOMBRE":"CASTILLO SANCHEZ JOAN SEBASTIAN","CARGO":"GESTOR DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003689379","NOMBRE":"CIFUENTES GONZALEZ OSCAR ANDRES","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80246110","NOMBRE":"CONTRERAS REY CRISTIAN GUILLERMO","CARGO":"CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1233889625","NOMBRE":"ESPITIA CAMPO JUAN SEBASTIAN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1030652713","NOMBRE":"ESTEPA MANRIQUE EDWIN MIGUEL","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1018465839","NOMBRE":"FORERO VILLESCAS DANIEL EDUARDO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1073163359","NOMBRE":"GAITAN DIAZ JHONATAN STEVEN","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1073163359","NOMBRE":"GOMEZ ARANDA OSCAR JAVIER","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"79580277","NOMBRE":"GALINDO RAMIREZ JAIME","CARGO":"CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1062804821","NOMBRE":"GARCIA FUENTES LUIS CARLOS","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1070943496","NOMBRE":"GOMEZ ARANDA OSCAR JAVIER","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1075307989","NOMBRE":"GOMEZ CHAVARRO NICOLAS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1019039104","NOMBRE":"GUERRERO RODRIGUEZ LEYDER ALFONSO","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1007403214","NOMBRE":"GUTIERREZ CARDENAS ANDRES FELIPE","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"10280486","NOMBRE":"GUTIERREZ GALLEGO JOSE ALBEIRO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1073829893","NOMBRE":"HERNANDEZ GOMEZ LUIS ALFREDO","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80811105","NOMBRE":"HERNANDEZ MONTOYA ANDRES FELIPE","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"5752718","NOMBRE":"HERRERA SANCHEZ SERGIO JESUS","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1051266700","NOMBRE":"LEAL PINTO DIEGO ARMANDO","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1000182141","NOMBRE":"LIZARAZO BEJARANO SEBASTIAN MANUEL","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1019057503","NOMBRE":"LLANES PARRA ANDRES CAMILO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"5463864","NOMBRE":"MENDOZA AGRESOTH WILMER ALEXANDER","CARGO":"COORDINADOR DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"79854103","NOMBRE":"MOLINA ORTIZ WILSON","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"52665870","NOMBRE":"MOLINA SIERRA ANGELA YINETH","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"2956695","NOMBRE":"MORALES LOPEZ JAVIER ALFONSO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80017722","NOMBRE":"MORENO CESAR FRANCISCO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014302543","NOMBRE":"MURCIA VELASQUEZ LUIS CARLOS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014217851","NOMBRE":"NAVARRETE LOZANO HECTOR ALFREDO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1048847255","NOMBRE":"ORTIZ MENDOZA JOSELIN SANTIAGO","CARGO":"ASISTENTE ADMINISTRATIVO Y TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003903493","NOMBRE":"OVALLE PINZÓN RONALD EDUARDO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"4622679","NOMBRE":"PARADA NOGUERA JOSE FRANCISCO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1242359","NOMBRE":"PAREDES NIEVES RICHARD JAVIER","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80007538","NOMBRE":"PEÑUELA CASTELLANOS ALEXANDER","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1050782958","NOMBRE":"PEREZ FLOREZ RONAL DAVID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"5183998","NOMBRE":"PEREZ PERDOMO JUNIOR","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80151669","NOMBRE":"PRIETO LOPEZ WILSON ARTURO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014207631","NOMBRE":"RAMIREZ GUERRA SEBASTIAN","CARGO":"ANALISTA DE PAQUETEO Y TRANSPORTES","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1022923612","NOMBRE":"RODRIGUEZ BOHORQUEZ BLANCA NIEVES","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014266078","NOMBRE":"RODRIGUEZ CASTRO MANUEL ANDRES","CARGO":"COORDINADOR DE TRANSPORTE","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"7310055","NOMBRE":"ROMERO SANCHEZ EINAR","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1133774733","NOMBRE":"SANDON RODRIGUEZ CESAR LUIS","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80429680","NOMBRE":"SARAY VELASQUEZ OSCAR FERNANDO","CARGO":"AUXILIAR LOGISTICO INTEGRAL","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1015392662","NOMBRE":"SARMIENTO RINCON FABIAN MAURICIO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80012570","NOMBRE":"SERRATO HERNANDEZ JOSE IVAN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014240749","NOMBRE":"SIERRA FINO NICOLAS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80513180","NOMBRE":"SIERRA MIRANDA EDUIN ARCADIO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003689070","NOMBRE":"TEJERO BRAVO BRAYAN DAVID","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003844537","NOMBRE":"TORRES PINEDA KEVIN ALEJANDRO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1074188837","NOMBRE":"TORRES RINCON IVAN ANDRES","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"4753642","NOMBRE":"VARGAS DUQUE YELITZA YIOMAR","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80063849","NOMBRE":"VARGAS TORRES JOHN CARLO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80761467","NOMBRE":"VELANDIA ALFONSO JHON ALEXANDER","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80657041","NOMBRE":"VELASQUEZ MARTINEZ JAIME ALEXANDER","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1064314463","NOMBRE":"PEÑA DIAZ JUAN DAVID","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1018503493","NOMBRE":"ROMERO RAMOS ANGIE LORENA","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"DEPOSITO"},
+{"DOCUMENTO":"80225260","NOMBRE":"DIAZ CHALA LEONARDO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"DEPOSITO"},
+{"DOCUMENTO":"1033764049","NOMBRE":"ROSERO VALENCIA ANDREA DEL PILAR","CARGO":"COORDINADOR DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"DEPOSITO"},
+{"DOCUMENTO":"1077033836","NOMBRE":"ESPINOSA ALBA YONATAN ALEXANDER","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"11321256","NOMBRE":"ALBUTRIA CALLEJAS YECID","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1070968391","NOMBRE":"RODRIGUEZ RIOS CARLOS FELIPE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1000256590","NOMBRE":"BERJAN PELAEZ MIGUEL ANGEL","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003560735","NOMBRE":"CASTRO DIAZ DANIEL EDUARDO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"  ","NOMBRE":"ACERO RAMIREZ NICOLAS","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1000626091","NOMBRE":"BOLAÑOS MEDINA BRIDGITTE ZOLANDY","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1072751156","NOMBRE":"MAHECHA HERNANDEZ JUAN DAVID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1016094308","NOMBRE":"ZOQUE QUINTERO JUAN NICOLAS","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1000572091","NOMBRE":"MIRQUE BARRERA JUAN FELIPE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1000493362","NOMBRE":"MORAD CAMARGO NICOLAS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1063140974","NOMBRE":"ALTAMIRANDA HERNANDEZ JOSE MIGUEL","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1000383138","NOMBRE":"SANABRIA PINEDA MAICOL ANDRES","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003905256","NOMBRE":"MOLINA CASTRO SERGIO DAVID","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1081916001","NOMBRE":"BARRETO TORRES HECTOR ENRIQUE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1019984109","NOMBRE":"AGUIRRE LOZANO MICHAEL STIVEN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"4068715","NOMBRE":"ANDRADE ANDRADE LAURIMAR CAROLINA","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1019077282","NOMBRE":"MUÑOZ BOHORQUERZ JOSE INAEL","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1073177490","NOMBRE":"GUERRERO MARTINEZ FABIAN ALEXANDER","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014235097","NOMBRE":"LEON FRANCO ANDRES FELIPE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"79603194","NOMBRE":"MARTINEZ CEBALLOS CARLOS ALBERTO","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1051502112","NOMBRE":"GOMEZ FONSECA JULIAN ANDREY","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1023083320","NOMBRE":"FARFAN RUIZ GABRIEL STEVEN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1030590289","NOMBRE":"PIÑEROS DIAZ DAVID STIVEN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1016594548","NOMBRE":"BOLIVAR DIAZ NICK ALEJANDRO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1064123","NOMBRE":"PARADA RAMIREZ LUBEIDA","CARGO":"AUXILIAR DE SERVICIOS GENERALES","AREA":"ADMINISTRACIÓN TALENTO Y CULTURA","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"52737775","NOMBRE":"GANZO HUERFANO CLAUDIA PATRICIA","CARGO":"AUXILIAR DE SERVICIOS GENERALES","AREA":"ADMINISTRACIÓN TALENTO Y CULTURA","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1015992449","NOMBRE":"CASTIBLANCO MEJIA JUAN DIEGO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1133774727","NOMBRE":"ALTAMIRANDA BLANCO JHON ALEXANDER","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1033728587","NOMBRE":"MARTINEZ DUARTE JONNATHAN DAVID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"6270204","NOMBRE":"REINA PEREZ CARLOS DAVID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014250388","NOMBRE":"MONROY SALAZAR CRISTAN CAMILO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"60264428","NOMBRE":"PARADA VALENCIA MARIA YULEIMA","CARGO":"ANALISTA DE CONTROL","AREA":"CONTROL","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1003534218","NOMBRE":"PULIDO CORTES ANDRES FELIPE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1001054666","NOMBRE":"TRUJILLO GIRAL EDGAR DAVID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1016122144","NOMBRE":"COLPAS RIOS LISANDRO ANDRES","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1015995962","NOMBRE":"MENDOZA VALENCIA JHON ANGEL","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003532810","NOMBRE":"CARRILLO PRIETO VIVIANA CAROLINA","CARGO":"AUXILIAR DE FACTURACION","AREA":"FINANCIERA","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1010077664","NOMBRE":"CHAVES SANTACRUZ DARWUIN FABIAN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1013606537","NOMBRE":"MORENO SANCHEZ JOSE LEONARDO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1023302837","NOMBRE":"LOPEZ OSORIO SERGIO ALEJANDRO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1016034792","NOMBRE":"TORRES HERNANDEZ EDISON STEVEN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1069872851","NOMBRE":"PALACIO PALACIOS FREDY GIOVANNY","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"13747025","NOMBRE":"SILVA VELASCO ALEXANDER","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003188263","NOMBRE":"PADILLA JULIO IVAN DARIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1073237393","NOMBRE":"MANRIQUE GALVIS YENI ROCIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1002556791","NOMBRE":"ROMERO CELY JHON EDILSON","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1101821076","NOMBRE":"SANCHEZ MONTES MARTIN ELIAS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"4719332","NOMBRE":"YENDIS PEREZ CESAR","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80004281","NOMBRE":"DIAZ CHALA JORGE ALEXANDER","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1121332885","NOMBRE":"PLATA RODRIGUEZ LUIS ANGEL","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1018402043","NOMBRE":"ROJAS RAMIREZ BRAYAN STIVEN","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1045430899","NOMBRE":"DIAZ VERTEL JOSE GABRIEL","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1074136693","NOMBRE":"ORTIZ VALERO JHONATAN RAMIRO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1085171586","NOMBRE":"GARIZAO MONTALVO JOSE CARLOS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1116867258","NOMBRE":"TORRES CHIQUILLO HOLMAN ARTURO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1012329867","NOMBRE":"TORRES MONROY SERGIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1016010574","NOMBRE":"VALENCIA MATALLANA DANIEL STICK","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1133774724","NOMBRE":"GUZMAN GUEVARA YAINER EDUARDO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1002317050","NOMBRE":"TORRES PUERTA DIEGO JAVIER","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"80746305","NOMBRE":"SOTO PICO WILLIAM","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1019088435","NOMBRE":"RUIZ CORREDOR JUAN CAMILO","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1070599026","NOMBRE":"SAIZ SANCHEZ JOSUE LEONARDO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1001345038","NOMBRE":"PINILLA CASTELLANOS DANIEL ESTEBAN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1000952532","NOMBRE":"ORDOÑEZ MORENO DANIELA MARCELA","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1067161334","NOMBRE":"PEREZ SANDON LUIS MARIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1054678232","NOMBRE":"REYES GUTIERREZ YASMIN LICED","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1034658403","NOMBRE":"RINCON REYES SANTIAGO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1133774743","NOMBRE":"SANDON NUÑEZ JORGE LUIS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1082871354","NOMBRE":"CANTILLO ARMENTA NEIDER YESID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1193465399","NOMBRE":"POLO ANAYA DANIEL CLEMENTE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1063148413","NOMBRE":"PEREZ ALTAMIRANDA JOSE DAVID","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1003063352","NOMBRE":"TERAN VARGAS DEWI ANTONIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1065870011","NOMBRE":"HERNANDEZ PEREZ CARMEN ANTONIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1003063351","NOMBRE":"TERAN VARGAS ALDAIR ENRIQUE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1005039771","NOMBRE":"PEREZ PINEDA ALBERT ANTONIO","CARGO":"AYUDANTE DE TRANSPORTE","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1006069744","NOMBRE":"LIMA ALAPE LUIS LEONARDO","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1014193603","NOMBRE":"GAMBA CASTIBLANCO JOHANA PAOLA","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1019987233","NOMBRE":"LEMUS MOLANO SEBASTIAN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1051502743","NOMBRE":"RAMIREZ ROCHA IVAN EDUARDO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1022424920","NOMBRE":"ANGARITA FISCO MARILY JENETH","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"79137086","NOMBRE":"TAPIA ROJAS JORGE","CARGO":"AUXILIAR CONDUCTOR","AREA":"TRANSPORTE","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1090394243","NOMBRE":"PELAEZ NIETO JOSE LUIS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1000857436","NOMBRE":"MARTINEZ MARTINEZ JHON ALEXANDER","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1033695843","NOMBRE":"PEREZ GANZO CRISTHIAM CAMILO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1074184496","NOMBRE":"MORENO CORREDOR JESSICA STEFFANIA","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"DEPOSITO"},
+{"DOCUMENTO":"1193075793","NOMBRE":"CAMACHO AREVALO SANTIAGO STEVEN","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1063134335","NOMBRE":"ALTAMIRANDA GARCIA MARLON JAVIER","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1192916039","NOMBRE":"ALVARADO LOPEZ SHAAREN ELENA","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1022943299","NOMBRE":"AVILEZ LOPEZ CAMILO ANDRES","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1073152914","NOMBRE":"PINEDA RUIZ LUIS ALEJANDRO","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1133774715","NOMBRE":"VARGAS HERNANDEZ EDILSON JOSE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1059119310","NOMBRE":"SEPULVEDA JIMENEZ YEFERSON GUILLERMO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1023362121","NOMBRE":"BELTRAN CAREÑO DANIEL FELIPE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"79997110","NOMBRE":"GARCIA RODRIGUEZ JOHN JAIRO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1073818172","NOMBRE":"LOPEZ RAMIREZ JESUS ENRIQUE","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"1032467152","NOMBRE":"GONZALEZ BARRAGAN SANTIAGO ANDRES","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1063138194","NOMBRE":"NUÑEZ OROZCO JOSE IGNACIO","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1016001690","NOMBRE":"MARTINEZ PINZON NEIDY YURANY","CARGO":"AUXILIAR DE CONTROL","AREA":"CONTROL","EMPRESA":"DEPOSITO"},
+{"DOCUMENTO":"1067163094","NOMBRE":"LOPEZ DORIA DIEGO LUIS","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1018424886","NOMBRE":"ROJAS PESCADOR JOSE DUVAN","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"IMC CARGO"},
+{"DOCUMENTO":"1000802952","NOMBRE":"ECHEVERRI VASQUEZ ETELVINA","CARGO":"ANALISTA DE OPERACIONES Y DESARROLLO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"4889647","NOMBRE":"MENDEZ ZAMBRANO FRANKLIN ANTONIO","CARGO":"AUXILIAR LOGISTICO MONTACARGUISTA","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"},
+{"DOCUMENTO":"5866217","NOMBRE":"CASTRO HERNANDEZ MARY ALEXANDRA","CARGO":"AUXILIAR LOGISTICO","AREA":"OPERACIONES Y DESARROLLO","EMPRESA":"LOGIMAT"}
+];
+
+
+const EMP_MAP = {};
+EMPLEADOS.forEach(e => { EMP_MAP[e.DOCUMENTO] = e; });
+
+// ════════════════════════════════════════
+//  BASE DE DATOS LOCAL (IndexedDB)
+// ════════════════════════════════════════
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('IMC_Horas_v2', 4);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (d.objectStoreNames.contains('registros')) {
+        d.deleteObjectStore('registros');
+      }
+      const s = d.createObjectStore('registros', { keyPath: 'id' });
+      s.createIndex('ced_fecha', ['cedula','fecha'], { unique: true });
+      s.createIndex('fecha', 'fecha', { unique: false });
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror   = () => rej('DB error');
+  });
+}
+
+function dbGet(cedula, fecha) {
+  return new Promise(res => {
+    const tx  = db.transaction('registros','readonly');
+    const req = tx.objectStore('registros').index('ced_fecha').get([cedula,fecha]);
+    req.onsuccess = () => res(req.result || null);
+    req.onerror   = () => res(null);
+  });
+}
+
+function dbSave(data) {
+  return new Promise((res,rej) => {
+    const tx  = db.transaction('registros','readwrite');
+    const store = tx.objectStore('registros');
+    const payload = { ...data };
+
+    if (!payload.id) {
+      payload.id = `${payload.cedula || 'reg'}-${payload.fecha || 'fecha'}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    const req = store.put(payload);
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => rej('Save error');
+  });
+}
+
+function dbAll(filtros = {}) {
+  return new Promise(res => {
+    const tx  = db.transaction('registros','readonly');
+    const req = tx.objectStore('registros').getAll();
+    req.onsuccess = () => {
+      let r = req.result || [];
+      if (filtros.fecha)    r = r.filter(x => x.fecha === filtros.fecha);
+      if (filtros.fechaIni) r = r.filter(x => x.fecha >= filtros.fechaIni);
+      if (filtros.fechaFin) r = r.filter(x => x.fecha <= filtros.fechaFin);
+      if (filtros.empresa)  r = r.filter(x => x.empresa === filtros.empresa);
+      if (filtros.buscar) {
+        const b = filtros.buscar.toLowerCase();
+        r = r.filter(x => x.cedula.includes(b) || (x.nombre||'').toLowerCase().includes(b));
+      }
+      r.sort((a,b) => ((b.fecha+b.entrada) > (a.fecha+a.entrada)) ? 1 : -1);
+      res(r);
+    };
+  });
+}
+
+// ════════════════════════════════════════
+//  SINCRONIZACIÓN
+// ════════════════════════════════════════
+function setSyncIndicator(state) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-lbl');
+  if (!dot) return;
+  dot.className = 'sync-dot' + (state === 'ok' ? ' ok' : state === 'err' ? ' err' : state === 'loading' ? ' pulse' : '');
+  lbl.textContent = state === 'ok' ? 'Sync OK' : state === 'err' ? 'Sin sync' : state === 'loading' ? 'Sincronizando…' : 'Sin sync';
+}
+
+async function syncRecord(registro) {
+  const url = getWriteURL();
+  if (!url) return;
+  setSyncIndicator('loading');
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(registro)
+    });
+    const j = await r.json();
+    setSyncIndicator(j.status === 'ok' ? 'ok' : 'err');
+    if (j.status === 'ok') toast('ok', '☁️ Guardado en la nube');
+  } catch(e) {
+    setSyncIndicator('err');
+    toast('warn', '📶 Sin conexión — guardado localmente');
+  }
+}
+
+async function pullCloudAll() {
+  const url = getSheetURL();
+  if (!url || pullEnProgreso) return false;
+  pullEnProgreso = true;
+  try {
+    const r = await fetch(url, { method: 'GET', cache: 'no-store' });
+    const text = await r.text();
+    const payload = text
+      .replace(/^\/\*O_o\*\/\s*google\.visualization\.Query\.setResponse\(/, '')
+      .replace(/\)\s*;?\s*$/, '');
+
+    const parsed = JSON.parse(payload);
+    const cloudRegs = (parsed?.table?.rows || []).map(row => {
+      const cols = row.c || [];
+      const fecha = normalizeGoogleDateValue(cols[1]?.v, 'date');
+      return {
+        cedula: String(cols[0]?.v ?? ''),
+        fecha,
+        nombre: cols[2]?.v ?? '',
+        cargo: cols[3]?.v ?? '',
+        empresa: cols[4]?.v ?? '',
+        entrada: normalizeGoogleDateValue(cols[5]?.v, 'time'),
+        salida_almuerzo: normalizeGoogleDateValue(cols[6]?.v, 'time'),
+        regreso_almuerzo: normalizeGoogleDateValue(cols[7]?.v, 'time'),
+        salida: normalizeGoogleDateValue(cols[8]?.v, 'time'),
+        updated_at: normalizeGoogleDateValue(cols[9]?.v, 'datetime')
+      };
+    }).filter(r => r.cedula && r.fecha);
+
+    latestCloudRows = cloudRegs;
+
+    for (const cReg of cloudRegs) {
+      const cedula = String(cReg.cedula);
+      const local = await dbGet(cedula, cReg.fecha);
+      const merged = {
+        id: local ? local.id : undefined,
+        cedula,
+        fecha: cReg.fecha,
+        nombre: cReg.nombre || (local && local.nombre) || '',
+        cargo: cReg.cargo || (local && local.cargo) || '',
+        empresa: cReg.empresa || (local && local.empresa) || '',
+        entrada: cReg.entrada || (local && local.entrada) || null,
+        salida_almuerzo: cReg.salida_almuerzo || (local && local.salida_almuerzo) || null,
+        regreso_almuerzo: cReg.regreso_almuerzo || (local && local.regreso_almuerzo) || null,
+        salida: cReg.salida || (local && local.salida) || null
+      };
+      await dbSave(merged);
+    }
+    setSyncIndicator('ok');
+    return true;
+  } catch (e) {
+    console.error('pullCloudAll error', e);
+    setSyncIndicator('err');
+    return false;
+  } finally {
+    pullEnProgreso = false;
+  }
+}
+
+async function syncFromSheet() {
+  setSyncIndicator('loading');
+  const ok = await pullCloudAll();
+  await loadRegs();
+  if (document.getElementById('sec-dashboard')?.classList.contains('active')) {
+    await loadDash();
+  }
+  if (ok) toast('ok', '☁️ Sincronizado con Google Sheets');
+  else toast('err', '⚠️ Error de conexión con la nube');
+}
+
+// ════════════════════════════════════════
+//  UTILIDADES
+// ════════════════════════════════════════
+function today() {
+  const n = new Date();
+  const yyyy = n.getFullYear();
+  const mm = String(n.getMonth() + 1).padStart(2, '0');
+  const dd = String(n.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function timeStr() { return new Date().toLocaleTimeString('en-GB', { hour12: false }); }
+function fmtDate(d) { return d.split('-').reverse().join('/'); }
+function initials(n) { return n ? n.split(' ').map(x => x[0]).join('').slice(0,2) : '??'; }
+
+function normalizeGoogleDateValue(value, mode = 'date') {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string' || !value.startsWith('Date(')) return value;
+
+  const inner = value.match(/^Date\((.*)\)$/);
+  if (!inner) return value;
+
+  const parts = inner[1].split(',').map(p => Number(p.trim()));
+  if (parts.some(Number.isNaN)) return value;
+
+  const [year, month, day, hour = 0, minute = 0, second = 0] = parts;
+  if (mode === 'time') {
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+  }
+
+  return `${String(year).padStart(4, '0')}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function calcHoras(ent, sal, sa, ra) {
+  if (!ent || !sal) return { reales: null, extras: null };
+  const toMin = t => { const [h,m,s] = t.split(':').map(Number); return h*60 + m + (s||0)/60; };
+  const total = toMin(sal) - toMin(ent);
+  const alm = (sa && ra) ? (toMin(ra) - toMin(sa)) : 0;
+  const reales = (total - alm) / 60;
+  return { reales, extras: Math.max(0, reales - HORAS_DIARIAS_BASE), alm: alm/60 };
+}
+
+function getEstadoRegistro(reg) {
+  if (!reg.entrada) return { label: 'Sin ingreso', className: 'status-err' };
+  if (reg.salida) return { label: 'Ya salió', className: 'status-ok' };
+  if (reg.regreso_almuerzo) return { label: 'En planta', className: 'status-ok' };
+  if (reg.salida_almuerzo) return { label: 'Almorzando', className: 'status-warn' };
+  return { label: 'En planta', className: 'status-ok' };
+}
+
+function toast(type, msg) {
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.innerHTML = `<span class="toast-icon">${{ok:'✅',err:'❌',warn:'⚠️'}[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => { el.classList.add('toast-out'); setTimeout(() => el.remove(), 500); }, 3500);
+}
+
+// ════════════════════════════════════════
+//  LÓGICA DE LA APP
+// ════════════════════════════════════════
+function tickClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-GB', { hour12: false });
+  const d = now.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('clock-txt').textContent = t;
+  const ct = document.getElementById('ck-time'); if(ct) ct.textContent = t;
+  const cd = document.getElementById('ck-date'); if(cd) cd.textContent = d;
+}
+
+function setRegistrationFeedback(type, icon, name, role, time, msg) {
+  const card = document.getElementById('fb-card');
+  const ico = document.getElementById('fb-ico');
+  const n = document.getElementById('fb-name');
+  const r = document.getElementById('fb-role');
+  const t = document.getElementById('fb-time');
+  const m = document.getElementById('fb-msg');
+
+  card.className = `feedback-card show ${type}`;
+  ico.textContent = icon;
+  n.textContent = name;
+  r.textContent = role;
+  t.textContent = time;
+  m.textContent = msg;
+}
+
+function setRegistrationPipeline(reg) {
+  const items = [
+    { id: 'ps-1', key: 'entrada', icon: '🟢', label: 'Entrada' },
+    { id: 'ps-2', key: 'salida_almuerzo', icon: '🍽️', label: 'Sale Alm.' },
+    { id: 'ps-3', key: 'regreso_almuerzo', icon: '🔙', label: 'Regreso' },
+    { id: 'ps-4', key: 'salida', icon: '🏁', label: 'Salida' }
+  ];
+
+  const pipeline = document.getElementById('pipeline');
+  if (!pipeline) return;
+  pipeline.style.display = 'grid';
+
+  const latestIndex = items.reduce((latest, item, index) => reg[item.key] ? index : latest, -1);
+  items.forEach((item, index) => {
+    const el = document.getElementById(item.id);
+    if (!el) return;
+    el.classList.remove('done', 'active');
+
+    if (reg[item.key]) {
+      if (index === latestIndex) {
+        el.classList.add('active');
+        el.innerHTML = `<span class="ps-icon">${item.icon}</span><span class="ps-lbl">${item.label}</span>`;
+      } else {
+        el.classList.add('done');
+        el.innerHTML = `<span class="ps-icon">✅</span><span class="ps-lbl">${item.label}</span>`;
+      }
+    } else {
+      el.innerHTML = `<span class="ps-icon">${item.icon}</span><span class="ps-lbl">${item.label}</span>`;
+    }
+  });
+}
+
+function pad(v) {
+  const inp = document.getElementById('ced-inp');
+  if (v === 'del') inp.value = inp.value.slice(0,-1);
+  else if (inp.value.length < 12) inp.value += v;
+}
+
+function updateLoginModeUI() {
+  const isAdmin = LOGIN_MODO === 'admin';
+  const pinInput = document.getElementById('pin-input');
+  const label = document.getElementById('login-label');
+  const sub = document.querySelector('.login-sub');
+  const toggleTxt = document.getElementById('toggle-txt');
+
+  if (toggleTxt) {
+    toggleTxt.textContent = isAdmin ? 'Kiosko' : 'Administrador';
+  }
+  if (sub) {
+    sub.textContent = isAdmin ? 'Modo administrador · usa tu PIN para continuar' : 'Modo kiosko · entra directo al registro';
+  }
+  if (label) {
+    label.textContent = isAdmin ? 'PIN de Administrador' : 'Código PIN';
+  }
+  if (pinInput) {
+    pinInput.placeholder = isAdmin ? '••••' : 'Entrar directo';
+    pinInput.value = '';
+  }
+}
+
+function toggleLoginMode() {
+  LOGIN_MODO = LOGIN_MODO === 'kiosko' ? 'admin' : 'kiosko';
+  updateLoginModeUI();
+}
+
+updateLoginModeUI();
+
+async function doLogin() {
+  const pin = document.getElementById('pin-input').value;
+
+  if (LOGIN_MODO === 'kiosko') {
+    MODO = 'kiosko';
+    await startApp();
+    return;
+  }
+
+  if (pin === PIN_ADMIN) {
+    MODO = 'admin';
+    await startApp();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+    setTimeout(() => document.getElementById('login-err').style.display = 'none', 3000);
+  }
+}
+
+async function startApp() {
+  await initDB();
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('hdr-user').textContent = MODO === 'admin' ? 'Administrador' : 'Kiosko';
+  
+  const nav = document.getElementById('tabs-nav');
+  nav.innerHTML = `
+    <div class="tab active" onclick="showTab('kiosko',this)">⏱ Registro</div>
+    ${MODO === 'admin' ? '<div class="tab" onclick="showTab(\'dashboard\',this)">📊 Dashboard</div>' : ''}
+    ${MODO === 'admin' ? '<div class="tab" onclick="showTab(\'registros\',this)">📋 Historial</div>' : ''}
+  `;
+
+  tickClock();
+  clockTimer = setInterval(tickClock, 1000);
+  await refreshKioskoCounters();
+  if (MODO === 'admin') void loadRegs();
+  void pullCloudAll();
+  kioskoRefreshTimer = setInterval(refreshKioskoCounters, 15000);
+}
+
+function doLogout() { location.reload(); }
+
+async function showTab(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'dashboard') {
+    await initDB();
+    await pullCloudAll();
+    await loadDash();
+  }
+  if (id === 'registros') {
+    await initDB();
+    await loadRegs();
+    void pullCloudAll().finally(() => loadRegs());
+  }
+}
+
+async function doRegister() {
+  const inp = document.getElementById('ced-inp');
+  const cedula = inp.value.trim();
+  if (!cedula) return;
+  inp.value = '';
+
+  const emp = EMP_MAP[cedula];
+  if (!emp) {
+    setRegistrationFeedback('error', '❌', 'Empleado no encontrado', 'Verifica la cédula', '', 'No existe este documento en la base del sistema');
+    toast('err', 'Empleado no encontrado');
+    return;
+  }
+
+  const f = today();
+  const h = timeStr();
+  let reg = await dbGet(cedula, f);
+  let cardType = 'success';
+  let cardIcon = '✅';
+  let cardMsg = '';
+
+  if (!reg) {
+    reg = { cedula, fecha: f, entrada: h, nombre: emp.NOMBRE, cargo: emp.CARGO, empresa: emp.EMPRESA };
+    cardType = 'success';
+    cardIcon = '✅';
+    cardMsg = 'Entrada registrada correctamente';
+    toast('ok', `Bienvenido ${emp.NOMBRE}`);
+  } else if (!reg.salida_almuerzo) {
+    reg.salida_almuerzo = h;
+    cardType = 'warning';
+    cardIcon = '🍽️';
+    cardMsg = 'Salida a almuerzo registrada';
+    toast('warn', 'Salida a almuerzo');
+  } else if (!reg.regreso_almuerzo) {
+    reg.regreso_almuerzo = h;
+    cardType = 'info';
+    cardIcon = '🔙';
+    cardMsg = 'Regreso de almuerzo registrado';
+    toast('ok', 'Regreso de almuerzo');
+  } else if (!reg.salida) {
+    reg.salida = h;
+    cardType = 'success';
+    cardIcon = '🏁';
+    cardMsg = 'Salida registrada correctamente';
+    toast('ok', 'Salida registrada');
+  } else {
+    setRegistrationFeedback('warning', '⚠️', emp.NOMBRE, emp.CARGO, `Hoy: ${h}`, 'Ya completaste los registros de hoy');
+    setRegistrationPipeline(reg);
+    toast('warn', 'Ya completaste los registros de hoy');
+    return;
+  }
+
+  await dbSave(reg);
+  setRegistrationFeedback(cardType, cardIcon, emp.NOMBRE, emp.CARGO, `Hora registrada: ${h}`, cardMsg);
+  setRegistrationPipeline(reg);
+  refreshKioskoCounters();
+  void syncRecord(reg);
+}
+
+async function refreshKioskoCounters() {
+  await initDB();
+  const regs = await dbAll({ fecha: today() });
+  document.getElementById('ck-total').textContent = regs.length;
+  document.getElementById('ck-planta').textContent = regs.filter(r => r.entrada && !r.salida).length;
+  document.getElementById('ck-salieron').textContent = regs.filter(r => r.salida).length;
+}
+
+function csvEscape(value) {
+  const s = String(value ?? '');
+  return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function downloadCsv(rows, fileName) {
+  const delimiter = ';';
+  const headers = ['Fecha', 'Documento', 'Empleado', 'Cargo', 'Empresa', 'Entrada', 'Sale Alm.', 'Regreso', 'Salida', 'H. Trab.', 'H. Extras', 'Estado'];
+  const lines = [headers.join(delimiter)];
+
+  rows.forEach(r => {
+    const h = calcHoras(r.entrada, r.salida, r.salida_almuerzo, r.regreso_almuerzo);
+    const estado = getEstadoRegistro(r);
+    const row = [
+      fmtDate(r.fecha),
+      r.cedula || '',
+      r.nombre || '',
+      r.cargo || '',
+      r.empresa || '',
+      r.entrada || '',
+      r.salida_almuerzo || '',
+      r.regreso_almuerzo || '',
+      r.salida || '',
+      h.reales ? h.reales.toFixed(2) : '',
+      h.extras ? h.extras.toFixed(2) : '',
+      estado.label || ''
+    ];
+    lines.push(row.map(csvEscape).join(delimiter));
+  });
+
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function exportDash() {
+  await initDB();
+  const f = document.getElementById('f-fecha').value || today();
+  const e = document.getElementById('f-empresa').value;
+  const baseRegs = latestCloudRows.length
+    ? latestCloudRows.filter(r => (!f || r.fecha === f) && (!e || r.empresa === e))
+    : await dbAll({ fecha: f, empresa: e });
+  const regs = baseRegs.slice().sort((a, b) => ((b.fecha + (b.entrada || '')) > (a.fecha + (a.entrada || ''))) ? 1 : -1);
+
+  if (!regs.length) {
+    toast('warn', 'No hay registros para exportar');
+    return;
+  }
+
+  downloadCsv(regs, `dashboard_${f}.csv`);
+  toast('ok', '📥 Descarga de Excel lista');
+}
+
+async function exportRegs() {
+  await initDB();
+  const regs = await dbAll({
+    buscar: document.getElementById('r-buscar').value,
+    fechaIni: document.getElementById('r-ini').value,
+    fechaFin: document.getElementById('r-fin').value,
+    empresa: document.getElementById('r-emp').value
+  });
+
+  if (!regs.length) {
+    toast('warn', 'No hay registros para exportar');
+    return;
+  }
+
+  const fileName = `registros_${today()}.csv`;
+  downloadCsv(regs, fileName);
+  toast('ok', '📥 Descarga de Excel lista');
+}
+
+async function loadDash() {
+  await initDB();
+  const f = document.getElementById('f-fecha').value || today();
+  const e = document.getElementById('f-empresa').value;
+  const baseRegs = latestCloudRows.length
+    ? latestCloudRows.filter(r => (!f || r.fecha === f) && (!e || r.empresa === e))
+    : await dbAll({ fecha: f, empresa: e });
+  const regs = baseRegs.slice().sort((a, b) => ((b.fecha + (b.entrada || '')) > (a.fecha + (a.entrada || ''))) ? 1 : -1);
+
+  const extrasTotal = regs.reduce((sum, r) => {
+    const h = calcHoras(r.entrada, r.salida, r.salida_almuerzo, r.regreso_almuerzo);
+    return sum + (h.extras || 0);
+  }, 0);
+
+  const topExtras = regs
+    .map(r => {
+      const h = calcHoras(r.entrada, r.salida, r.salida_almuerzo, r.regreso_almuerzo);
+      return { nombre: r.nombre, extras: h.extras || 0 };
+    })
+    .filter(x => x.extras > 0)
+    .sort((a, b) => b.extras - a.extras)
+    .slice(0, 5);
+
+  document.getElementById('dash-sub').textContent = `Detalle del día ${fmtDate(f)}`;
+  document.getElementById('dash-tbl-sub').textContent = `${regs.length} registros para ${fmtDate(f)}`;
+  document.getElementById('kp-total').textContent = regs.length;
+  document.getElementById('kp-planta').textContent = regs.filter(r => r.entrada && !r.salida).length;
+  document.getElementById('kp-extras').textContent = `${extrasTotal.toFixed(2)}h`;
+  document.getElementById('kp-extras-trend').textContent = `Sobre la jornada de ${HORAS_DIARIAS_BASE}h`;
+  document.getElementById('kp-extras-b').style.width = `${Math.min(100, (extrasTotal / Math.max(HORAS_DIARIAS_BASE, 1)) * 100)}%`;
+
+  const chartEl = document.getElementById('top-extra-chart');
+  if (chartEl) {
+    chartEl.innerHTML = topExtras.length
+      ? topExtras.map((item, index) => {
+          const pct = Math.max(8, (item.extras / Math.max(topExtras[0].extras, 0.1)) * 100);
+          return `<div>
+            <div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;margin-bottom:4px;">
+              <span style="font-weight:700;color:var(--navy)">${index + 1}. ${item.nombre}</span>
+              <span style="color:var(--muted);font-weight:600">${item.extras.toFixed(2)}h</span>
+            </div>
+            <div style="height:10px;border-radius:999px;background:var(--surface2);overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#0ea5e9,#2563eb);border-radius:999px"></div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div class="text-sm text-muted">No hay horas extra para este filtro.</div>';
+  }
+  
+  const tbody = document.getElementById('dash-body');
+  tbody.innerHTML = regs.map(r => {
+    const h = calcHoras(r.entrada, r.salida, r.salida_almuerzo, r.regreso_almuerzo);
+    const estado = getEstadoRegistro(r);
+    return `<tr>
+      <td>${r.nombre}</td><td>${r.cargo}</td><td>${r.empresa}</td>
+      <td>${r.entrada||'—'}</td><td>${r.salida_almuerzo||'—'}</td><td>${r.regreso_almuerzo||'—'}</td><td>${r.salida||'—'}</td>
+      <td>${h.reales ? h.reales.toFixed(2)+'h' : '—'}</td><td>${h.extras ? h.extras.toFixed(2)+'h' : '—'}</td>
+      <td><span class="chip ${estado.className}">${estado.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadRegs() {
+  await initDB();
+  const regs = await dbAll({ 
+    buscar: document.getElementById('r-buscar').value,
+    fechaIni: document.getElementById('r-ini').value,
+    fechaFin: document.getElementById('r-fin').value,
+    empresa: document.getElementById('r-emp').value
+  });
+  
+  document.getElementById('reg-sub').textContent = `${regs.length} registros encontrados`;
+  const tbody = document.getElementById('reg-body');
+  tbody.innerHTML = regs.map(r => {
+    const h = calcHoras(r.entrada, r.salida, r.salida_almuerzo, r.regreso_almuerzo);
+    return `<tr>
+      <td>${fmtDate(r.fecha)}</td><td>${r.nombre}</td><td>${r.cargo}</td><td>${r.empresa}</td>
+      <td>${r.entrada||'—'}</td><td>${r.salida_almuerzo||'—'}</td><td>${r.regreso_almuerzo||'—'}</td><td>${r.salida||'—'}</td>
+      <td>${h.reales ? h.reales.toFixed(2)+'h' : '—'}</td><td>${h.extras ? h.extras.toFixed(2)+'h' : '—'}</td>
+      <td>Sincronizado</td>
+    </tr>`;
+  }).join('');
+}
+
+async function clearDB() {
+  await initDB();
+  if (confirm('¿Borrar todo?')) {
+    const tx = db.transaction('registros','readwrite');
+    tx.objectStore('registros').clear();
+    tx.oncomplete = () => location.reload();
+  }
+}
+
+initDB().then(() => console.log('DB Ready'));
+</script>
+</body>
+</html>
