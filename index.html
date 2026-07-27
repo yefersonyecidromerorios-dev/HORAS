@@ -665,6 +665,10 @@ tr:hover td { background: rgba(244,247,fb,.5); }
               <option value="LOGIMAT">LOGIMAT</option>
               <option value="DEPOSITO">DEPOSITO</option>
             </select>
+            <input type="text" id="prog-buscar-programado" placeholder="🔎 Buscar programado…"
+       oninput="renderProgramacionTable(document.getElementById('prog-empresa').value)"
+       style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;min-width:200px">
+<input type="date" id="prog-fecha" onchange="loadProgramacion()">
             <input type="date" id="prog-fecha" onchange="loadProgramacion()">
           </div>
         </div>
@@ -2206,13 +2210,12 @@ async function pullProgFromCloud() {
   try {
     const r = await fetch(`${url}?action=programacion`, { method: 'GET', cache: 'no-store' });
     const rows = await r.json();
-    return Array.isArray(rows) ? rows : [];
+    return Array.isArray(rows) ? rows.map(r => ({ ...r, cedula: String(r.cedula) })) : [];
   } catch (e) {
     console.error('pullProgFromCloud error', e);
     return [];
   }
 }
-
 
 
 
@@ -2393,7 +2396,20 @@ async function loadProgramacion() {
 }
 
 function renderProgramacionTable(empresa) {
-  const rows = empresa ? progRows.filter(r => r.empresa === empresa) : progRows;
+   const buscar = (document.getElementById('prog-buscar-programado')?.value || '').trim().toLowerCase();
+   let rows = empresa ? progRows.filter(r => r.empresa === empresa) : progRows.slice();
+   if (buscar) {
+     rows = rows.filter(r =>
+       String(r.cedula || '').toLowerCase().includes(buscar) ||
+       String(r.nombre || '').toLowerCase().includes(buscar)
+     );
+   }
+   rows = rows
+    .sort((a, b) => {
+      const ta = a.hora_inicio && isValidHora24(a.hora_inicio) ? hmToMin(a.hora_inicio) : Infinity;
+      const tb = b.hora_inicio && isValidHora24(b.hora_inicio) ? hmToMin(b.hora_inicio) : Infinity;
+      return ta - tb;
+    });
   const tbody = document.getElementById('prog-body');
   const empty = document.getElementById('prog-empty');
   tbody.innerHTML = rows.map(r => `<tr>
@@ -2410,6 +2426,11 @@ function renderProgramacionTable(empresa) {
     <td><button class="btn btn-danger" style="padding:6px 10px" onclick="removeProgRow('${r.cedula}','${r.fecha}','${(r.nombre||'').replace(/'/g,"\\'")}')">✕</button></td>
   </tr>`).join('');
   empty.style.display = rows.length ? 'none' : 'block';
+if (!rows.length && buscar) {
+  document.querySelector('#prog-empty .empty-state-text').textContent = 'No se encontró ningún empleado programado con ese criterio';
+} else if (!rows.length) {
+  document.querySelector('#prog-empty .empty-state-text').textContent = 'Aún no hay empleados programados para este día';
+}
 }
 
 function updateProgField(cedula, fecha, field, value) {
@@ -2550,9 +2571,13 @@ async function copiarProgramacionManual() {
 async function enviarProgramacionImagen() {
   const fecha   = document.getElementById('prog-fecha').value || today();
   const empresa = document.getElementById('prog-empresa').value;
-  const rows = (empresa ? progRows.filter(r => r.empresa === empresa) : progRows)
+const rows = (empresa ? progRows.filter(r => r.empresa === empresa) : progRows)
     .slice()
-    .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
+    .sort((a, b) => {
+      const ta = a.hora_inicio && isValidHora24(a.hora_inicio) ? hmToMin(a.hora_inicio) : Infinity;
+      const tb = b.hora_inicio && isValidHora24(b.hora_inicio) ? hmToMin(b.hora_inicio) : Infinity;
+      return ta - tb;
+    });
   if (!rows.length) {
     toast('warn', 'No hay empleados programados para generar la imagen');
     return;
